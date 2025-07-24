@@ -18,14 +18,14 @@ const BSP_TOKEN = process.env.ULTRAMSG_TOKEN;       // Use ULTRAMSG_TOKEN no .en
 const BSP_API_URL = `https://api.ultramsg.com/${BSP_INSTANCE_ID}/messages/chat`;
 
 // Mensagens Padrão do Bot
-const BOT_NAME = "Seu Bot"; // Nome do seu bot
-const COMPANY_NAME = "Sua Empresa"; // Nome da sua empresa
+const BOT_NAME = "Bravobot"; // Nome do seu bot
+const COMPANY_NAME = "Refrigera Brasil"; // Nome da sua empresa
 
 const WELCOME_MESSAGE = `Olá, tudo bem? Sou o ${BOT_NAME} da ${COMPANY_NAME}. Como posso ajudar?\n1. Opção Um\n2. Opção Dois\n3. Opção Três\n4. Opção Quatro`;
-const OPTION_1_RESPONSE = `Resposta detalhada para a Opção Um.`;
-const OPTION_2_RESPONSE = `Resposta detalhada para a Opção Dois.`;
-const OPTION_3_RESPONSE = `Resposta detalhada para a Opção Três.`;
-const OPTION_4_RESPONSE = `Resposta detalhada para a Opção Quatro.`;
+const OPTION_1_RESPONSE = `Para consultar o preço, me informe o nome do produto e o modelo. Esse modelo geralmente fica ao lado ou atrás do aparelho. Se preferir, pode me mandar uma foto da etiqueta — assim consigo te ajudar mais rápido e com mais precisão! 😊`;
+const OPTION_2_RESPONSE = `Para acionar a garantia, é só levar a peça até nossa loja com a nota ou cupom fiscal. Apresentando tudo certinho na expedição, a troca será feita pela garantia.`;
+const OPTION_3_RESPONSE = `Para consultar o preço, me informe o nome do produto e o modelo. Esse modelo geralmente fica ao lado ou atrás do aparelho. Se preferir, pode me mandar uma foto da etiqueta — assim consigo te ajudar mais rápido e com mais precisão! 😊`;
+const OPTION_4_RESPONSE = `Alisson entrará em contato com você em breve. Tempo médio de atendimento em até 10 minutos Por favor, aguarde.`;
 const IMAGE_RECEIVED_RESPONSE = `Ótima imagem! Um de nossos atendentes irá analisar e entrará em contato em breve.`;
 const UNSUPPORTED_MEDIA_MESSAGE = `Desculpe, no momento só consigo processar mensagens de texto e imagens.`;
 
