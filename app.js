@@ -18,14 +18,14 @@ const BSP_TOKEN = process.env.ULTRAMSG_TOKEN;       // Use ULTRAMSG_TOKEN no .en
 const BSP_API_URL = `https://api.ultramsg.com/${BSP_INSTANCE_ID}/messages/chat`;
 
 // Mensagens Padrão do Bot
-const BOT_NAME = "Bravobot"; // Nome do seu bot
-const COMPANY_NAME = "Refrigera Brasil"; // Nome da sua empresa
+const BOT_NAME = "Seu Bot"; // Nome do seu bot
+const COMPANY_NAME = "Sua Empresa"; // Nome da sua empresa
 
 const WELCOME_MESSAGE = `Olá, tudo bem? Sou o ${BOT_NAME} da ${COMPANY_NAME}. Como posso ajudar?\n1. Opção Um\n2. Opção Dois\n3. Opção Três\n4. Opção Quatro`;
-const OPTION_1_RESPONSE = `Para consultar o preço, me informe o nome do produto e o modelo. Esse modelo geralmente fica ao lado ou atrás do aparelho. Se preferir, pode me mandar uma foto da etiqueta — assim consigo te ajudar mais rápido e com mais precisão! 😊`;
-const OPTION_2_RESPONSE = `Para acionar a garantia, é só levar a peça até nossa loja com a nota ou cupom fiscal. Apresentando tudo certinho na expedição, a troca será feita pela garantia.`;
-const OPTION_3_RESPONSE = `Para consultar o preço, me informe o nome do produto e o modelo. Esse modelo geralmente fica ao lado ou atrás do aparelho. Se preferir, pode me mandar uma foto da etiqueta — assim consigo te ajudar mais rápido e com mais precisão! 😊`;
-const OPTION_4_RESPONSE = `Alisson entrará em contato com você em breve. Tempo médio de atendimento em até 10 minutos Por favor, aguarde.`;
+const OPTION_1_RESPONSE = `Resposta detalhada para a Opção Um.`;
+const OPTION_2_RESPONSE = `Resposta detalhada para a Opção Dois.`;
+const OPTION_3_RESPONSE = `Resposta detalhada para a Opção Três.`;
+const OPTION_4_RESPONSE = `Resposta detalhada para a Opção Quatro.`;
 const IMAGE_RECEIVED_RESPONSE = `Ótima imagem! Um de nossos atendentes irá analisar e entrará em contato em breve.`;
 const UNSUPPORTED_MEDIA_MESSAGE = `Desculpe, no momento só consigo processar mensagens de texto e imagens.`;
 
@@ -34,24 +34,23 @@ const HUMAN_ASSUME_CHAT_PHRASE = "Obrigado por aguardar!"; // Frase que o HUMANO
 const HUMAN_END_CHAT_PHRASE = "Agradeço pelo contato! Qualquer coisa, é só chamar por aqui"; // Frase que o HUMANO envia para o bot poder re-engajar
 
 // --- GESTÃO DE ESTADO (EM MEMÓRIA) ---
-// ATENÇÃO: Os dados neste Map serão perdidos se a máquina do bot reiniciar (comum no plano gratuito do Fly.io).
-// Para um negócio real, use um banco de dados persistente (ex: Firestore) para userStates!
 const userStates = new Map();
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
-const MAX_UNRECOGNIZED_MESSAGES = 0; // Quantas vezes o bot tenta responder antes de parar (0 = para na 1a)
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const MAX_UNRECOGNIZED_MESSAGES = 0; // Bot para de responder após a primeira mensagem não entendida
 
 // --- LISTAS DE CONTROLE ---
-const THANK_YOU_PHRASES = [ // Usado para identificar agradecimentos do cliente após finalizar atendimento
+const THANK_YOU_PHRASES = [
     'obrigado', 'obrigada', 'ok', 'certo', 'valeu', 'vlw', 'ate mais', 'tchau', 'grato', 'grata', 'agradeco', 'blz', 'beleza'
 ];
 
-const INITIAL_GREETINGS = new Set([ // Frases que disparam a mensagem de boas-vindas
-    'oi', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'ei', 'opa', 'tudo bem', 'como esta', 'ola', 'oi bot', 'olá'
+// LISTA APRIMORADA DE SAUDAÇÕES INICIAIS
+const INITIAL_GREETINGS = new Set([
+    'oi', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'ei', 'opa', 'tudo bem', 'como esta', 'ola', 'oi bot', 'olá',
+    'bom dia!', 'boa tarde!', 'boa noite!', 'olá!', 'oi!' // Adicionado com pontuação e acento para robustez
 ]);
 
-const BLOCKED_NUMBERS = new Set([ // Números que o bot não deve responder de jeito nenhum
-    // Formato para Ultramsg: '55DDNNNNNNNNN@c.us' (substitua DD pelo DDD e NNNNNNNNN pelo número)
-    // Exemplo: '5571987654321@c.us'
+const BLOCKED_NUMBERS = new Set([
+    // Adicione seus números aqui no formato correto para Ultramsg (ex: '5571987654321@c.us')
 ]);
 
 // --- FUNÇÕES AUXILIARES ---
@@ -81,12 +80,14 @@ function isThankYouMessage(text) {
     return THANK_YOU_PHRASES.includes(normalizedText);
 }
 
+// FUNÇÃO APRIMORADA DE RECONHECIMENTO DE SAUDAÇÕES
 function isInitialGreeting(text) {
     const normalizedText = text.toLowerCase().trim()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
-        .replace(/\s{2,}/g," ");
-    return INITIAL_GREETINGS.has(normalizedText);
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove pontuação
+        .replace(/\s{2,}/g,""); // Remove espaços duplos e garante uma string compacta
+    // Verifica se a saudação exata ou uma variação sem pontuação/acentos está na lista
+    return INITIAL_GREETINGS.has(normalizedText) || INITIAL_GREETINGS.has(text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 }
 
 // --- ENDPOINT PARA RECEBER MENSAGENS (WEBHOOK) ---
@@ -101,23 +102,21 @@ app.post('/webhook', async (req, res) => {
         return res.status(200).send('Webhook inválido.');
     }
 
-    const from = messageData.from; // Número do remetente (cliente)
+    const from = messageData.from;
 
-    // Inicializa o estado do usuário se não existir
     if (!userStates.has(from)) {
         userStates.set(from, {
             lastBotMessageTime: 0,
             unrecognizedCount: 0,
             humanAssumedChat: false,
             lastHumanBotMessage: null,
-            dialogflowSessionId: '' // Mantido para compatibilidade, não usado nesta versão
+            dialogflowSessionId: ''
         });
     }
     const currentUserState = userStates.get(from);
 
     console.log(`DEBUG: Estado atual para ${from}:`, JSON.stringify(currentUserState));
 
-    // --- Lógica para mensagens enviadas pelo próprio bot (fromMe: true) ---
     if (messageData.fromMe) {
         const humanMessageText = messageData.body.trim();
         console.log(`Mensagem fromMe recebida: "${humanMessageText}"`);
@@ -140,21 +139,17 @@ app.post('/webhook', async (req, res) => {
         return res.status(200).send('Mensagem fromMe processada.');
     }
 
-    // --- Ignora mensagens de grupos ---
     if (from.endsWith('@g.us')) {
         console.log(`Mensagem de grupo recebida de ${from}. Ignorando.`);
         return res.status(200).send('Mensagem de grupo ignorada.');
     }
 
-    // --- Ignora números bloqueados ---
-    // Adapte o formato do número bloqueado conforme o seu BSP (Ultramsg: @c.us, Twilio: whatsapp:+)
     const normalizedFromForBlocked = from.includes('@c.us') ? from : `whatsapp:${from}`; 
     if (BLOCKED_NUMBERS.has(normalizedFromForBlocked)) {
         console.log(`Mensagem de número bloqueado (${from}). Ignorando completamente.`);
         return res.status(200).send('Mensagem de número bloqueado ignorada.');
     }
 
-    // Extrai o tipo e o corpo da mensagem
     const type = messageData.type;
     let text = messageData.body;
 
@@ -162,7 +157,6 @@ app.post('/webhook', async (req, res) => {
 
     const currentTime = Date.now();
 
-    // --- LÓGICA DE CONTROLE DE FLUXO DE CONVERSA E RE-ENGAJAMENTO ---
     if (currentUserState.humanAssumedChat) {
         const timeSinceLastBotMessage = currentTime - currentUserState.lastBotMessageTime;
 
@@ -177,7 +171,6 @@ app.post('/webhook', async (req, res) => {
                 currentUserState.unrecognizedCount = 0;
                 currentUserState.lastBotMessageTime = currentTime;
                 userStates.set(from, currentUserState);
-                // Continua para a lógica normal do chatbot abaixo
             } else {
                 return res.status(200).send('Bot em silêncio por atendimento humano.');
             }
@@ -186,23 +179,17 @@ app.post('/webhook', async (req, res) => {
             currentUserState.humanAssumedChat = false;
             currentUserState.unrecognizedCount = 0;
             userStates.set(from, currentUserState);
-            // Continua para a lógica normal do chatbot abaixo
         }
     }
-
-    // --- LÓGICA PRINCIPAL DO CHATBOT ---
 
     if (type === 'chat') {
         text = text.toLowerCase().trim();
 
-        // 1. Verificar saudações iniciais
-        if (isInitialGreeting(text)) {
+        if (isInitialGreeting(text)) { // SAUDOES INICIAIS
             await sendMessage(from, WELCOME_MESSAGE);
             currentUserState.unrecognizedCount = 0;
             currentUserState.lastBotMessageTime = currentTime;
-        }
-        // 2. Opções diretas do menu
-        else if (text === '1') {
+        } else if (text === '1') {
             await sendMessage(from, OPTION_1_RESPONSE);
             currentUserState.unrecognizedCount = 0;
             currentUserState.lastBotMessageTime = currentTime;
@@ -218,14 +205,12 @@ app.post('/webhook', async (req, res) => {
             await sendMessage(from, OPTION_4_RESPONSE);
             currentUserState.unrecognizedCount = 0;
             currentUserState.lastBotMessageTime = currentTime;
-        } else if (text === 'menu') { // Opção para ver o menu principal
+        } else if (text === 'menu') {
             await sendMessage(from, WELCOME_MESSAGE);
             currentUserState.unrecognizedCount = 0;
             currentUserState.lastBotMessageTime = currentTime;
-        }
-        // 3. Mensagem não reconhecida pelo bot (após saudações e opções)
-        else {
-            currentUserState.unrecognizedCount++; // Incrementa o contador
+        } else {
+            currentUserState.unrecognizedCount++;
             console.log(`Bot não entendeu a mensagem de ${from}. Contador: ${currentUserState.unrecognizedCount}`);
 
             if (currentUserState.unrecognizedCount > MAX_UNRECOGNIZED_MESSAGES) {
@@ -236,11 +221,10 @@ app.post('/webhook', async (req, res) => {
                 console.log(`Bot não enviará mensagem "não entendi" pois MAX_UNRECOGNIZED_MESSAGES é 0.`);
             }
         }
-    } else if (type === 'image') { // Se for uma imagem
+    } else if (type === 'image') {
         await sendMessage(from, IMAGE_RECEIVED_RESPONSE);
         currentUserState.unrecognizedCount = 0;
     } else {
-        // Para outros tipos de mensagem (vídeo, áudio, etc.)
         await sendMessage(from, UNSUPPORTED_MEDIA_MESSAGE);
         currentUserState.unrecognizedCount++;
     }
@@ -250,5 +234,5 @@ app.post('/webhook', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Servidor rodando na porta 8080`);
 });
