@@ -4,7 +4,7 @@
   "description": "Um bot generico para WhatsApp",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"  <-- ESTA LINHA FOI ADICIONADA!
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",
