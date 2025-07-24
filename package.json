@@ -1,4 +1,14 @@
 {
+  "name": "rfbalisson-bot",
+  "version": "1.0.0",
+  "description": "Um bot generico para WhatsApp",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"  <-- ESTA LINHA FOI ADICIONADA!
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "axios": "^1.11.0",
     "dotenv": "^17.2.0",
